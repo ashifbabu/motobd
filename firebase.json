@@ -12,7 +12,14 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "*.local"
+        ".pytest_cache",
+        "**/*.pyc",
+        "node_modules",
+        ".env",
+        ".env.*"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
       ]
     }
   ],
@@ -22,6 +29,24 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/v1/**",
+        "function": "api"
+      },
+      {
+        "source": "/docs",
+        "function": "api"
+      },
+      {
+        "source": "/openapi.json",
+        "function": "api"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   }
 }

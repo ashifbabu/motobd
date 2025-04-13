@@ -2,10 +2,12 @@
 # To get started, simply uncomment the below code or create your own.
 # Deploy with `firebase deploy`
 
+from firebase_functions import https_fn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+from firebase_admin import initialize_app
 
 from app.api.routes.bikes import router as bikes_router
 from app.api.routes.reviews import router as reviews_router
@@ -14,6 +16,9 @@ from app.api.routes.brands import router as brands_router
 from app.api.routes.types import router as types_router
 from app.api.routes.resources import router as resources_router
 
+# Initialize Firebase Admin
+initialize_app()
+
 # Load environment variables
 load_dotenv()
 
@@ -21,7 +26,10 @@ load_dotenv()
 app = FastAPI(
     title="Bangla Motorcycle Review API",
     description="API for managing motorcycle reviews in Bangla",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # Configure CORS
@@ -45,8 +53,16 @@ app.include_router(resources_router, prefix="/api/v1/resources", tags=["resource
 @app.get("/")
 async def root():
     return {
-        "message": "Welcome to Bangla Motorcycle Review API"
+        "message": "Welcome to Bangla Motorcycle Review API",
+        "docs_url": "/docs",
+        "redoc_url": "/redoc"
     }
+
+@https_fn.on_request()
+def api(req: https_fn.Request) -> https_fn.Response:
+    """Handle requests to the FastAPI application."""
+    from fastapi.middleware.wsgi import WSGIMiddleware
+    return WSGIMiddleware(app)(req)
 
 # Note: Other routers (brands, types, resources, auth) will be added later
 
