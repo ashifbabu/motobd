@@ -40,6 +40,10 @@
         "function": "api"
       },
       {
+        "source": "/redoc",
+        "function": "api"
+      },
+      {
         "source": "/openapi.json",
         "function": "api"
       },

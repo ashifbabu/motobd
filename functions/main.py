@@ -1,70 +1,93 @@
-# Welcome to Cloud Functions for Firebase for Python!
-# To get started, simply uncomment the below code or create your own.
-# Deploy with `firebase deploy`
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.docs import get_redoc_html
+import uvicorn
 import os
-from firebase_admin import initialize_app
+from dotenv import load_dotenv
+import logging
+from typing import Dict, Any
 
-from app.api.routes.bikes import router as bikes_router
-from app.api.routes.reviews import router as reviews_router
-from app.api.routes.auth import router as auth_router
-from app.api.routes.brands import router as brands_router
-from app.api.routes.types import router as types_router
-from app.api.routes.resources import router as resources_router
-
-# Initialize Firebase Admin
-initialize_app()
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Bangla Motorcycle Review API",
-    description="API for managing motorcycle reviews in Bangla",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
-)
+# Environment configuration
+ENV = os.getenv("ENVIRONMENT", "development")
+DEBUG = ENV == "development"
+VERSION = "1.0.0"
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
+    app = FastAPI(
+        title="RaiderCritic API",
+        description="Your Trusted Motorcycle Review Platform",
+        version=VERSION,
+        debug=DEBUG,
+        docs_url="/docs",
+        redoc_url=None  # We'll create a custom redoc route
+    )
 
-# Include routers
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(bikes_router, prefix="/api/v1/bikes", tags=["bikes"])
-app.include_router(reviews_router, prefix="/api/v1/reviews", tags=["reviews"])
-app.include_router(brands_router, prefix="/api/v1/brands", tags=["brands"])
-app.include_router(types_router, prefix="/api/v1/types", tags=["types"])
-app.include_router(resources_router, prefix="/api/v1/resources", tags=["resources"])
+    # Configure CORS
+    origins = ["http://localhost:3000", "http://localhost:8000"] if DEBUG else ["https://raidercritic.com"]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info("CORS middleware configured with origins: %s", origins)
 
-# Root endpoint
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Bangla Motorcycle Review API"}
+    # Custom ReDoc route that works with Firebase hosting
+    @app.get("/redoc", include_in_schema=False)
+    async def redoc_html():
+        return get_redoc_html(
+            openapi_url="/openapi.json",
+            title=f"{app.title} - ReDoc",
+            redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
+        )
 
-# Main FastAPI application handler
-@app.middleware("http")
-async def handle_request(request: Request, call_next):
-    response = await call_next(request)
-    return response
+    # Exception handlers
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={"detail": exc.errors(), "body": exc.body}
+        )
+
+    @app.get("/")
+    async def root() -> Dict[str, Any]:
+        """Root endpoint returning API information."""
+        logger.info("Root endpoint called")
+        return {
+            "name": "RaiderCritic API",
+            "version": VERSION,
+            "environment": ENV,
+            "status": "operational"
+        }
+
+    @app.get("/health")
+    async def health_check() -> Dict[str, str]:
+        """Health check endpoint for monitoring."""
+        return {"status": "healthy"}
+
+    return app
+
+app = create_app()
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host=os.getenv("API_HOST", "0.0.0.0"), port=int(os.getenv("API_PORT", 8000)))
-
-#
-#
-# @https_fn.on_request()
-# def on_request_example(req: https_fn.Request) -> https_fn.Response:
-#     return https_fn.Response("Hello world!")
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting RaiderCritic API on port {port} in {ENV} mode")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0" if ENV == "production" else "127.0.0.1",
+        port=port,
+        reload=DEBUG,
+        workers=4 if ENV == "production" else 1,
+        log_level="info" if ENV == "production" else "debug"
+    ) 
