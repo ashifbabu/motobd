@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from firebase_admin import initialize_app, credentials, firestore, auth
+from firebase_admin import initialize_app, credentials, firestore, auth, delete_app, get_app
 import os
 import sys
 import json
@@ -16,34 +16,54 @@ from app.services.auth_service import AuthService
 # Load test environment variables
 load_dotenv()
 
-# Initialize Firebase Admin SDK with environment variables
-cred_dict = {
-    "type": "service_account",
-    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
-    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
-    "private_key": os.getenv("FIREBASE_PRIVATE_KEY", "").replace("\\n", "\n"),
-    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
-    "client_id": os.getenv("FIREBASE_CLIENT_ID"),
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_CERT_URL")
-}
+def pytest_sessionstart(session):
+    """Initialize Firebase at the start of testing session."""
+    try:
+        # Try to get existing app
+        firebase_app = get_app()
+        delete_app(firebase_app)
+    except ValueError:
+        pass
 
-try:
-    # Try to initialize with credentials
-    cred = credentials.Certificate(cred_dict)
-    firebase_app = initialize_app(cred, {
-        'projectId': os.getenv('FIREBASE_PROJECT_ID')
-    })
-except Exception as e:
-    print(f"Warning: Could not initialize Firebase with credentials: {e}")
-    print("Falling back to application default credentials")
-    # Fallback to application default credentials
-    cred = credentials.ApplicationDefault()
-    firebase_app = initialize_app(cred, {
-        'projectId': os.getenv('FIREBASE_PROJECT_ID')
-    })
+    try:
+        # Try to initialize with service account file
+        service_account_path = os.path.join(os.path.dirname(__file__), 'firebase-service-account.json')
+        if os.path.exists(service_account_path):
+            cred = credentials.Certificate(service_account_path)
+        else:
+            # Fallback to environment variables
+            cred_dict = {
+                "type": "service_account",
+                "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+                "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+                "private_key": os.getenv("FIREBASE_PRIVATE_KEY", "").replace("\\n", "\n"),
+                "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+                "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_CERT_URL")
+            }
+            cred = credentials.Certificate(cred_dict)
+        
+        initialize_app(cred, {
+            'projectId': os.getenv('FIREBASE_PROJECT_ID')
+        })
+    except Exception as e:
+        print(f"Warning: Could not initialize Firebase with credentials: {e}")
+        print("Falling back to application default credentials")
+        cred = credentials.ApplicationDefault()
+        initialize_app(cred, {
+            'projectId': os.getenv('FIREBASE_PROJECT_ID')
+        })
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up Firebase at the end of testing session."""
+    try:
+        firebase_app = get_app()
+        delete_app(firebase_app)
+    except ValueError:
+        pass
 
 @pytest.fixture
 def client():
