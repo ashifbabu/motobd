@@ -7,23 +7,21 @@ on:
     branches: [ main ]
 
 jobs:
-  build-test-deploy:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: './functions/package.json'
     
-    - name: Install Firebase CLI and Dependencies
+    - name: Install Dependencies
       run: |
         cd functions
-        npm ci
+        npm install
         npm install -g firebase-tools@latest
     
     - name: Set up Python
@@ -41,9 +39,9 @@ jobs:
     
     - name: Create Firebase service account file
       run: |
-        cd functions/tests
-        mkdir -p $(dirname firebase-service-account.json)
-        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-service-account.json
+        cd functions
+        mkdir -p tests
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > tests/firebase-service-account.json
     
     - name: Create .env file
       run: |
@@ -64,15 +62,10 @@ jobs:
         FIRESTORE_COLLECTION_USERS=users
         EOL
     
-    - name: Build
-      run: |
-        cd functions
-        npm run build
-    
     - name: Run Tests
       run: |
         cd functions
-        npm run test
+        python -m pytest tests/ -v
     
     - name: Deploy to Firebase
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
