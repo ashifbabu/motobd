@@ -28,13 +28,11 @@ def create_app() -> FastAPI:
         title="RaiderCritic API",
         description="Your Trusted Motorcycle Review Platform",
         version=VERSION,
-        debug=DEBUG,
-        docs_url="/docs",
-        redoc_url=None  # We'll create a custom redoc route
+        debug=DEBUG
     )
 
     # Configure CORS
-    origins = ["http://localhost:3000", "http://localhost:8000"] if DEBUG else ["https://raidercritic.com"]
+    origins = ["*"]  # Allow all origins in Cloud Functions
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -44,42 +42,14 @@ def create_app() -> FastAPI:
     )
     logger.info("CORS middleware configured with origins: %s", origins)
 
-    # Custom ReDoc route that works with Firebase hosting
-    @app.get("/redoc", include_in_schema=False)
-    async def redoc_html():
-        return get_redoc_html(
-            openapi_url="/openapi.json",
-            title=f"{app.title} - ReDoc",
-            redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
-        )
-
-    # Exception handlers
-    @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        return JSONResponse(
-            status_code=422,
-            content={"detail": exc.errors(), "body": exc.body}
-        )
-
     @app.get("/")
     async def root() -> Dict[str, Any]:
         """Root endpoint returning API information."""
         logger.info("Root endpoint called")
         return {
-            "name": "RaiderCritic API",
+            "message": "Welcome to Bangla Motorcycle Review API",
             "version": VERSION,
-            "environment": ENV,
-            "status": "operational",
-            "timestamp": datetime.utcnow().isoformat(),
-            "documentation": {
-                "swagger": "/docs",
-                "redoc": "/redoc",
-                "openapi": "/openapi.json"
-            },
-            "endpoints": {
-                "health": "/health",
-                "api": "/api/v1"
-            }
+            "status": "operational"
         }
 
     @app.get("/health")
@@ -91,14 +61,13 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
+# Don't run the server here, let Cloud Functions handle it
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     logger.info(f"Starting RaiderCritic API on port {port} in {ENV} mode")
     uvicorn.run(
-        "main:app",
-        host="0.0.0.0" if ENV == "production" else "127.0.0.1",
+        app,
+        host="0.0.0.0",
         port=port,
-        reload=DEBUG,
-        workers=4 if ENV == "production" else 1,
-        log_level="info" if ENV == "production" else "debug"
+        log_level="info"
     ) 
