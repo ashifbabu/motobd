@@ -1,0 +1,66 @@
+name: Firebase Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install Python dependencies
+      run: |
+        cd functions
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio httpx
+    
+    - name: Create .env file
+      run: |
+        cd functions
+        cat > .env << EOL
+        FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+        FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
+        FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
+        FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+        FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+        FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
+        MEASUREMENT_ID=${{ secrets.MEASUREMENT_ID }}
+        HUGGINGFACE_TOKEN=${{ secrets.HUGGINGFACE_TOKEN }}
+        AI_MODEL_NAME=csebuetnlp/banglat5
+        API_DEBUG_MODE=False
+        FIRESTORE_COLLECTION_BIKES=bikes
+        FIRESTORE_COLLECTION_REVIEWS=reviews
+        FIRESTORE_COLLECTION_USERS=users
+        EOL
+    
+    - name: Run Tests
+      run: |
+        cd functions
+        python -m pytest tests/ -v
+    
+    - name: Setup Node.js
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Deploy to Firebase
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: FirebaseExtended/action-hosting-deploy@v0
+      with:
+        repoToken: '${{ secrets.GITHUB_TOKEN }}'
+        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+        channelId: live
+        projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+        entryPoint: ./functions 
