@@ -1,4 +1,4 @@
-name: Deploy to Firebase
+name: Build and Deploy
 
 on:
   push:
@@ -15,24 +15,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Dependencies
+      run: |
+        cd functions
+        npm install
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-        cache: 'pip'
-
-    - name: Install dependencies
-      run: |
-        cd functions
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
 
     - name: Run tests
       run: |
         cd functions
-        python -m pytest tests/ -v
-      env:
-        TESTING: true
+        pip install -r requirements.txt
+        python -m pytest tests/test_main.py -v
 
     - name: Deploy to Firebase
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -40,5 +42,7 @@ jobs:
       with:
         args: deploy --only functions,hosting
       env:
-        FIREBASE_TOKEN: '${{ secrets.FIREBASE_TOKEN }}'
-        PROJECT_PATH: './functions' 
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        PROJECT_PATH: ./functions 
