@@ -38,13 +38,12 @@ jobs:
 
     - name: Prepare Firebase Configuration
       run: |
-        mkdir -p functions/config
-        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > functions/config/serviceAccountKey.json
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/serviceAccountKey.json
 
     - name: Deploy to Firebase
       uses: w9jds/firebase-action@master
       with:
         args: deploy --only functions,hosting
       env:
-        GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        GOOGLE_APPLICATION_CREDENTIALS: $HOME/serviceAccountKey.json
         PROJECT_PATH: ./functions 
