@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -23,25 +23,22 @@ jobs:
 
     - name: Install dependencies
       run: |
+        cd functions
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
     - name: Run tests
       run: |
+        cd functions
         python -m pytest tests/ -v
       env:
         TESTING: true
 
-    - name: Build Docker image
-      run: docker build -t bikerhub .
-
     - name: Deploy to Firebase
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: FirebaseExtended/action-hosting-deploy@v0
+      uses: w9jds/firebase-action@master
       with:
-        repoToken: '${{ secrets.GITHUB_TOKEN }}'
-        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-        channelId: live
-        projectId: motobd
+        args: deploy --only functions,hosting
       env:
-        FIREBASE_CLI_EXPERIMENTS: webframeworks 
+        FIREBASE_TOKEN: '${{ secrets.FIREBASE_TOKEN }}'
+        PROJECT_PATH: './functions' 
