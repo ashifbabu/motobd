@@ -36,14 +36,10 @@ jobs:
         pip install -r requirements.txt
         python -m pytest tests/test_main.py -v
 
-    - name: Prepare Firebase Configuration
-      run: |
-        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/serviceAccountKey.json
-
     - name: Deploy to Firebase
       uses: w9jds/firebase-action@master
       with:
         args: deploy --only functions,hosting
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: $HOME/serviceAccountKey.json
+        GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         PROJECT_PATH: ./functions 
