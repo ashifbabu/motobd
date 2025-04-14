@@ -1,5 +1,6 @@
 import pytest
 from firebase_admin import firestore
+from fastapi.testclient import TestClient
 
 @pytest.fixture
 def test_resource_data():
@@ -13,12 +14,12 @@ def test_resource_data():
     }
 
 def test_get_resources(client, db):
-    response = client.get("/resources/")
+    response = client.get("/api/v1/resources/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 def test_create_resource(client, db, test_resource_data):
-    response = client.post("/resources/", json=test_resource_data)
+    response = client.post("/api/v1/resources/", json=test_resource_data)
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == test_resource_data["title"]
@@ -33,7 +34,7 @@ def test_get_resource(client, db, test_resource_data):
     resource_ref.set(test_resource_data)
     resource_id = resource_ref.id
 
-    response = client.get(f"/resources/{resource_id}")
+    response = client.get(f"/api/v1/resources/{resource_id}")
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == test_resource_data["title"]
@@ -51,7 +52,7 @@ def test_update_resource(client, db, test_resource_data):
     updated_data = test_resource_data.copy()
     updated_data["title"] = "Updated Resource Title"
     
-    response = client.put(f"/resources/{resource_id}", json=updated_data)
+    response = client.put(f"/api/v1/resources/{resource_id}", json=updated_data)
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Updated Resource Title"
@@ -65,7 +66,7 @@ def test_delete_resource(client, db, test_resource_data):
     resource_ref.set(test_resource_data)
     resource_id = resource_ref.id
 
-    response = client.delete(f"/resources/{resource_id}")
+    response = client.delete(f"/api/v1/resources/{resource_id}")
     assert response.status_code == 200
     
     # Verify the resource is deleted

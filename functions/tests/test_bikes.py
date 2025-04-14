@@ -1,13 +1,14 @@
 import pytest
 from firebase_admin import firestore
+from fastapi.testclient import TestClient
 
 def test_get_bikes(client, db):
-    response = client.get("/bikes/")
+    response = client.get("/api/v1/bikes/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 def test_create_bike(client, db, test_bike_data):
-    response = client.post("/bikes/", json=test_bike_data)
+    response = client.post("/api/v1/bikes/", json=test_bike_data)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == test_bike_data["name"]
@@ -23,7 +24,7 @@ def test_get_bike(client, db, test_bike_data):
     bike_ref.set(test_bike_data)
     bike_id = bike_ref.id
 
-    response = client.get(f"/bikes/{bike_id}")
+    response = client.get(f"/api/v1/bikes/{bike_id}")
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == test_bike_data["name"]
@@ -32,7 +33,7 @@ def test_get_bike(client, db, test_bike_data):
     db.collection("bikes").document(bike_id).delete()
 
 def test_get_nonexistent_bike(client):
-    response = client.get("/bikes/nonexistent_id")
+    response = client.get("/api/v1/bikes/nonexistent_id")
     assert response.status_code == 404
 
 def test_create_bike_invalid_data(client):
@@ -40,7 +41,7 @@ def test_create_bike_invalid_data(client):
         "name": "Test Bike",
         # Missing required fields
     }
-    response = client.post("/bikes/", json=invalid_data)
+    response = client.post("/api/v1/bikes/", json=invalid_data)
     assert response.status_code == 422  # Validation error 
 
 def test_update_bike(client, db, test_bike_data):
@@ -53,7 +54,7 @@ def test_update_bike(client, db, test_bike_data):
     updated_data = test_bike_data.copy()
     updated_data["name"] = "Updated Bike Name"
     
-    response = client.put(f"/bikes/{bike_id}", json=updated_data)
+    response = client.put(f"/api/v1/bikes/{bike_id}", json=updated_data)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Bike Name"
@@ -67,7 +68,7 @@ def test_delete_bike(client, db, test_bike_data):
     bike_ref.set(test_bike_data)
     bike_id = bike_ref.id
 
-    response = client.delete(f"/bikes/{bike_id}")
+    response = client.delete(f"/api/v1/bikes/{bike_id}")
     assert response.status_code == 200
     
     # Verify the bike is deleted
@@ -80,7 +81,7 @@ def test_search_bikes(client, db, test_bike_data):
     bike_ref.set(test_bike_data)
     bike_id = bike_ref.id
 
-    response = client.get("/bikes/search?q=Test")
+    response = client.get("/api/v1/bikes/search", params={"query": test_bike_data["name"]})
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -95,7 +96,7 @@ def test_filter_bikes(client, db, test_bike_data):
     bike_ref.set(test_bike_data)
     bike_id = bike_ref.id
 
-    response = client.get("/bikes/filter?brand=Test%20Brand")
+    response = client.get("/api/v1/bikes/filter", params={"brand": test_bike_data["brand"]})
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)

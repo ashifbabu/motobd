@@ -1,8 +1,9 @@
 import pytest
 from firebase_admin import firestore
+from fastapi.testclient import TestClient
 
 def test_get_reviews(client, db):
-    response = client.get("/reviews/bikes/")
+    response = client.get("/api/v1/reviews/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
@@ -15,7 +16,7 @@ def test_create_review(client, db, test_review_data, test_bike_data):
     # Update review data with the bike ID
     test_review_data["bike_id"] = bike_id
     
-    response = client.post("/reviews/bikes/", json=test_review_data)
+    response = client.post("/api/v1/reviews/", json=test_review_data)
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == test_review_data["title"]
@@ -38,7 +39,7 @@ def test_get_review(client, db, test_review_data, test_bike_data):
     review_ref.set(test_review_data)
     review_id = review_ref.id
 
-    response = client.get(f"/reviews/bikes/{review_id}")
+    response = client.get(f"/api/v1/reviews/{review_id}")
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == test_review_data["title"]
@@ -48,7 +49,7 @@ def test_get_review(client, db, test_review_data, test_bike_data):
     db.collection("bikes").document(bike_id).delete()
 
 def test_get_nonexistent_review(client):
-    response = client.get("/reviews/bikes/nonexistent_id")
+    response = client.get("/api/v1/reviews/nonexistent_id")
     assert response.status_code == 404
 
 def test_create_review_invalid_data(client):
@@ -56,7 +57,7 @@ def test_create_review_invalid_data(client):
         "title": "Test Review",
         # Missing required fields
     }
-    response = client.post("/reviews/bikes/", json=invalid_data)
+    response = client.post("/api/v1/reviews/", json=invalid_data)
     assert response.status_code == 422  # Validation error
 
 def test_update_review(client, db, test_review_data, test_bike_data):
@@ -75,7 +76,7 @@ def test_update_review(client, db, test_review_data, test_bike_data):
     updated_data = test_review_data.copy()
     updated_data["title"] = "Updated Review Title"
     
-    response = client.put(f"/reviews/bikes/{review_id}", json=updated_data)
+    response = client.put(f"/api/v1/reviews/{review_id}", json=updated_data)
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Updated Review Title"
@@ -96,7 +97,7 @@ def test_delete_review(client, db, test_review_data, test_bike_data):
     review_ref.set(test_review_data)
     review_id = review_ref.id
 
-    response = client.delete(f"/reviews/bikes/{review_id}")
+    response = client.delete(f"/api/v1/reviews/{review_id}")
     assert response.status_code == 200
     
     # Verify the review is deleted

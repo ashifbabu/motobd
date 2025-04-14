@@ -132,7 +132,7 @@ def test_root(client):
 
 # Bikes Tests
 def test_get_bikes(client):
-    response = client.get("/api/v1/bikes")
+    response = client.get("/api/v1/bikes/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
@@ -172,7 +172,7 @@ def test_delete_bike(client, auth_token, test_bike_id):
 
 # Reviews Tests
 def test_get_reviews(client):
-    response = client.get("/api/v1/reviews")
+    response = client.get("/api/v1/reviews/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
@@ -213,16 +213,16 @@ def test_get_user_reviews(client, auth_token, test_review_id):
 
 # Other Endpoints Tests
 def test_get_brands(client):
-    response = client.get("/api/v1/brands")
+    response = client.get("/api/v1/brands/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 def test_get_types(client):
-    response = client.get("/api/v1/types")
+    response = client.get("/api/v1/types/")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 def test_get_resources(client):
-    response = client.get("/api/v1/resources")
+    response = client.get("/api/v1/resources/")
     assert response.status_code == 200
     assert isinstance(response.json(), list) 
