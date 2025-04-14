@@ -1,5 +1,4 @@
 fastapi==0.109.2
-firebase-functions==0.1.2
 firebase-admin==6.4.0
 uvicorn==0.27.1
 python-dotenv==1.0.1
