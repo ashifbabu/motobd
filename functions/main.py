@@ -51,11 +51,7 @@ app.include_router(resources_router, prefix="/api/v1/resources", tags=["resource
 # Root endpoint
 @app.get("/")
 async def root():
-    return {
-        "message": "Welcome to Bangla Motorcycle Review API",
-        "docs_url": "/docs",
-        "redoc_url": "/redoc"
-    }
+    return {"message": "Welcome to Bangla Motorcycle Review API"}
 
 # Main FastAPI application handler
 @app.middleware("http")

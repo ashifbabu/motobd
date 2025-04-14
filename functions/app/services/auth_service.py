@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
+from datetime import timezone
 from typing import Optional
 import jwt
 from app.models.schemas import User, UserCreate
@@ -13,7 +14,7 @@ class AuthService:
 
     def create_access_token(self, data: dict) -> str:
         to_encode = data.copy()
-        expire = datetime.now(UTC) + timedelta(minutes=self.access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
