@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, UTC
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,9 +47,20 @@ def create_app() -> FastAPI:
         """Root endpoint returning API information."""
         logger.info("Root endpoint called")
         return {
-            "message": "Welcome to Bangla Motorcycle Review API",
+            "name": "RaiderCritic API",
             "version": VERSION,
-            "status": "operational"
+            "environment": ENV,
+            "status": "operational",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "documentation": {
+                "swagger": "/docs",
+                "redoc": "/redoc",
+                "openapi": "/openapi.json"
+            },
+            "endpoints": {
+                "health": "/health",
+                "api": "/api/v1"
+            }
         }
 
     @app.get("/health")
