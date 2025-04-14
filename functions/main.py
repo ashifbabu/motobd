@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from typing import Dict, Any
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -68,7 +69,17 @@ def create_app() -> FastAPI:
             "name": "RaiderCritic API",
             "version": VERSION,
             "environment": ENV,
-            "status": "operational"
+            "status": "operational",
+            "timestamp": datetime.utcnow().isoformat(),
+            "documentation": {
+                "swagger": "/docs",
+                "redoc": "/redoc",
+                "openapi": "/openapi.json"
+            },
+            "endpoints": {
+                "health": "/health",
+                "api": "/api/v1"
+            }
         }
 
     @app.get("/health")
