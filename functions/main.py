@@ -2,8 +2,7 @@
 # To get started, simply uncomment the below code or create your own.
 # Deploy with `firebase deploy`
 
-from firebase_functions import https_fn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
@@ -58,13 +57,11 @@ async def root():
         "redoc_url": "/redoc"
     }
 
-@https_fn.on_request()
-def api(req: https_fn.Request) -> https_fn.Response:
-    """Handle requests to the FastAPI application."""
-    from fastapi.middleware.wsgi import WSGIMiddleware
-    return WSGIMiddleware(app)(req)
-
-# Note: Other routers (brands, types, resources, auth) will be added later
+# Main FastAPI application handler
+@app.middleware("http")
+async def handle_request(request: Request, call_next):
+    response = await call_next(request)
+    return response
 
 if __name__ == "__main__":
     import uvicorn
