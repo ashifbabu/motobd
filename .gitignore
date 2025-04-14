@@ -90,4 +90,8 @@ Thumbs.db
 .Python
 *.so
 /build
-/dist 
+/dist
+
+# Credentials
+functions/config/serviceAccountKey.json
+**/serviceAccountKey.json 
