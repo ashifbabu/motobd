@@ -4,9 +4,22 @@
     "indexes": "firestore.indexes.json"
   },
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "runtime": "nodejs20",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      ".env",
+      ".env.*",
+      "**/*.pyc",
+      "venv",
+      ".pytest_cache"
+    ]
   },
   "hosting": {
+    "site": "motobd-5dc39",
     "public": "public",
     "ignore": [
       "firebase.json",
@@ -15,8 +28,12 @@
     ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "/api/v1/**",
         "function": "api"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ]
   }
